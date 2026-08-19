@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Network Telemetry Suite - Live Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #070D18; color: #E2E8F0; padding: 18px; min-height: 100vh; overflow-x: hidden; }
+        
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: #0F172A; border: 1px solid #1E293B; padding: 12px 20px; border-radius: 12px; margin-bottom: 18px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand h1 { font-size: 18px; font-weight: 700; color: #F8FAFC; }
+        .pulse-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #10B981; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
+        
+        .target-switcher { display: flex; align-items: center; gap: 8px; background: #070D18; border: 1px solid #1E293B; padding: 4px 10px; border-radius: 8px; }
+        .target-input { background: transparent; border: none; color: #38BDF8; font-family: monospace; font-size: 13px; font-weight: 700; outline: none; width: 140px; }
+        
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn { background: #1E293B; color: #E2E8F0; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12.5px; transition: all 0.2s; }
+        .btn:hover { background: #334155; color: white; }
+        .btn-primary { background: #2563EB; border-color: #3B82F6; color: white; }
+        .btn-primary:hover { background: #1D4ED8; }
+
+        .split-layout { display: grid; grid-template-columns: 1fr 1.15fr; gap: 18px; }
+        .col-left, .col-right { display: flex; flex-direction: column; gap: 16px; }
+
+        .panel { background: #0F172A; border: 1px solid #1E293B; border-radius: 12px; padding: 18px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .panel-header { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 10px; letter-spacing: 0.8px; display: flex; justify-content: space-between; align-items: center; }
+
+        .wave-box { display: flex; justify-content: space-between; align-items: center; background: #070D18; border: 1px solid #1E293B; border-radius: 10px; padding: 14px; }
+        .wave-status-text { font-size: 16px; font-weight: 800; font-family: monospace; }
+        .wave-bars { display: flex; align-items: flex-end; gap: 5px; height: 32px; }
+        .bar { width: 8px; border-radius: 3px; background: #1E293B; transition: height 0.3s, background-color 0.3s; }
+        
+        .good .b1 { height: 10px; background: #10B981; }
+        .good .b2 { height: 18px; background: #10B981; }
+        .good .b3 { height: 25px; background: #10B981; }
+        .good .b4 { height: 32px; background: #10B981; }
+        .good-text { color: #10B981; }
+
+        .weak .b1 { height: 10px; background: #F59E0B; }
+        .weak .b2 { height: 18px; background: #F59E0B; }
+        .weak .b3, .weak .b4 { height: 8px; background: #1E293B; }
+        .weak-text { color: #F59E0B; }
+
+        .bad .b1 { height: 10px; background: #EF4444; }
+        .bad .b2, .bad .b3, .bad .b4 { height: 8px; background: #1E293B; }
+        .bad-text { color: #EF4444; }
+
+        .off .b1, .off .b2, .off .b3, .off .b4 { height: 6px; background: #475569; }
+        .off-text { color: #64748B; }
+
+        .ai-banner { background: rgba(7, 13, 24, 0.7); border-left: 5px solid #10B981; border-radius: 10px; padding: 16px; border-top: 1px solid #1E293B; border-right: 1px solid #1E293B; border-bottom: 1px solid #1E293B; }
+        .ai-banner h3 { color: #10B981; font-size: 14.5px; margin-bottom: 6px; }
+        .ai-banner p { font-size: 13px; color: #CBD5E1; line-height: 1.45; margin-bottom: 8px; }
+        .ai-banner ul { margin-left: 16px; font-size: 12px; color: #94A3B8; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .stat-card { background: #070D18; border: 1px solid #1E293B; padding: 12px; border-radius: 10px; }
+        .stat-label { font-size: 10.5px; text-transform: uppercase; color: #64748B; font-weight: 700; margin-bottom: 3px; }
+        .stat-value { font-size: 14.5px; font-weight: 700; color: #F8FAFC; font-family: monospace; }
+        .highlight { color: #38BDF8; }
+
+        .chart-container { background: #070D18; border: 1px solid #1E293B; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 7px 10px; border-bottom: 1px solid #1E293B; }
+        th { color: #64748B; font-size: 10.5px; text-transform: uppercase; }
+
+        .badge-open { background: rgba(239, 68, 68, 0.15); color: #EF4444; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-closed { background: rgba(16, 185, 129, 0.15); color: #10B981; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .demo-tag { background: #3B82F6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 6px; }
+
+        @media (max-width: 1024px) { .split-layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="top-navbar">
+        <div class="brand">
+            <span class="pulse-dot"></span>
+            <h1>Smart Network Telemetry Suite <span class="demo-tag">LIVE DEMO</span></h1>
+        </div>
+
+        <div class="target-switcher">
+            <span style="font-size: 11px; color: #64748B; font-weight: 700;">PROBE TARGET:</span>
+            <input id="targetInput" class="target-input" value="8.8.8.8" onkeydown="if(event.key==='Enter') setTarget()" />
+            <button class="btn btn-primary" style="padding: 3px 8px; font-size: 11px;" onclick="setTarget()">Apply</button>
+        </div>
+
+        <div class="header-actions">
+            <span id="lastSync" style="font-size: 11.5px; font-family: monospace; color: #94A3B8;">Syncing...</span>
+            <button class="btn" onclick="window.print()">🖨️ PDF</button>
+            <button class="btn" onclick="downloadJSON()">📥 JSON</button>
+        </div>
+    </div>
+
+    <div class="split-layout">
+        <div class="col-left">
+            <div class="panel">
+                <div class="panel-header">Link Quality & Signal Waveform</div>
+                <div id="waveCard" class="wave-box good">
+                    <div>
+                        <div style="font-size: 10.5px; color: #64748B; font-weight: 700; text-transform: uppercase;">Current Link State</div>
+                        <div id="waveStatusText" class="wave-status-text good-text">OPTIMAL SIGNAL</div>
+                    </div>
+                    <div class="wave-bars">
+                        <div class="bar b1"></div>
+                        <div class="bar b2"></div>
+                        <div class="bar b3"></div>
+                        <div class="bar b4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">AIOps Diagnostic & Root-Cause Intelligence</div>
+                <div id="aiBanner" class="ai-banner">
+                    <h3 id="aiTitle">🤖 Optimal Path Established</h3>
+                    <p id="aiSummary">All telemetry metrics reflect optimal link health. Zero packet drop observed.</p>
+                    <ul id="aiRecs"><li>Link path is operating normally.</li></ul>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Gateway & Interface Configuration</div>
+                <div class="grid-2">
+                    <div class="stat-card"><div class="stat-label">Local IP</div><div class="stat-value highlight" id="localIp">192.168.1.104</div></div>
+                    <div class="stat-card"><div class="stat-label">Public IP</div><div class="stat-value highlight" id="publicIp">182.156.30.24</div></div>
+                    <div class="stat-card"><div class="stat-label">Default Gateway</div><div class="stat-value" id="gateway">192.168.1.1</div></div>
+                    <div class="stat-card"><div class="stat-label">DNS Server</div><div class="stat-value" id="dns">1.1.1.1, 8.8.8.8</div></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Gateway Security & Critical Port Audit</div>
+                <table>
+                    <thead>
+                        <tr><th>Port</th><th>Service Protocol</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="portBody">
+                        <tr><td>Port 22</td><td>SSH Remote Admin</td><td><span class="badge-closed">CLOSED</span></td></tr>
+                        <tr><td>Port 53</td><td>DNS Name Resolution</td><td><span class="badge-open">OPEN</span></td></tr>
+                        <tr><td>Port 80</td><td>HTTP Web Management</td><td><span class="badge-open">OPEN</span></td></tr>
+                        <tr><td>Port 443</td><td>HTTPS Secure Web</td><td><span class="badge-closed">CLOSED</span></td></tr>
+                        <tr><td>Port 445</td><td>SMB File Sharing</td><td><span class="badge-closed">CLOSED</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-right">
+            <div class="panel">
+                <div class="panel-header">Live Telemetry Metrics Matrix</div>
+                <div class="grid-4">
+                    <div class="stat-card"><div class="stat-label">RTT Latency</div><div class="stat-value" id="avgLat">12.4 ms</div></div>
+                    <div class="stat-card"><div class="stat-label">Jitter Var</div><div class="stat-value" id="jitter">1.8 ms</div></div>
+                    <div class="stat-card"><div class="stat-label">Packet Loss</div><div class="stat-value" id="loss">0 %</div></div>
+                    <div class="stat-card"><div class="stat-label">ISP Transit</div><div class="stat-value" id="ispOrg" style="font-size: 12px;">Cloudflare Edge</div></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Live RTT Latency Stream (ms)</div>
+                <div class="chart-container">
+                    <canvas id="liveChart" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Telemetry Metric Distribution</div>
+                <div class="chart-container">
+                    <canvas id="distChart" height="90"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Multi-Hop Routing Path (Traceroute)</div>
+                <table>
+                    <thead>
+                        <tr><th>Hop</th><th>Host Identifier</th><th>IP Address</th><th>RTT</th></tr>
+                    </thead>
+                    <tbody id="hopsBody">
+                        <tr><td>Hop 1</td><td>local-gateway.lan</td><td style="color:#38BDF8; font-family:monospace;">192.168.1.1</td><td style="font-weight:600;">1.2 ms</td></tr>
+                        <tr><td>Hop 2</td><td>isp-edge-node.net</td><td style="color:#38BDF8; font-family:monospace;">10.45.0.1</td><td style="font-weight:600;">5.8 ms</td></tr>
+                        <tr><td>Hop 3</td><td>backbone-transit.org</td><td style="color:#38BDF8; font-family:monospace;">182.156.0.1</td><td style="font-weight:600;">9.4 ms</td></tr>
+                        <tr><td>Hop 4</td><td>dns.google</td><td style="color:#38BDF8; font-family:monospace;">8.8.8.8</td><td style="font-weight:600;">12.4 ms</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx1 = document.getElementById('liveChart').getContext('2d');
+        const liveChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'RTT Latency (ms)',
+                    data: [],
+                    borderColor: '#38BDF8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                    borderWidth: 2,
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 3.5,
+                    pointBackgroundColor: '#38BDF8'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#1E293B' }, ticks: { color: '#64748B' } },
+                    x: { grid: { color: '#1E293B' }, ticks: { color: '#64748B' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctx2 = document.getElementById('distChart').getContext('2d');
+        const distChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['Latency (ms)', 'Jitter (ms)', 'Loss (%)'],
+                datasets: [{
+                    data: [12.4, 1.8, 0],
+                    backgroundColor: ['#38BDF8', '#A855F7', '#10B981'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#1E293B' }, ticks: { color: '#64748B' } },
+                    x: { grid: { color: '#1E293B' }, ticks: { color: '#64748B' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        let target = '8.8.8.8';
+        let rollingHistory = [];
+
+        function updateTelemetry() {
+            const now = new Date().toLocaleTimeString();
+            document.getElementById('lastSync').innerText = 'Synced at ' + now;
+
+            // Generate realistic network telemetry with jitter
+            let baseLat = target === 'github.com' ? 34 : target === '1.1.1.1' ? 8 : 14;
+            let currentLat = (baseLat + (Math.random() * 4 - 2)).toFixed(1);
+            let currentJitter = (Math.random() * 2 + 0.5).toFixed(1);
+
+            document.getElementById('avgLat').innerText = currentLat + ' ms';
+            document.getElementById('jitter').innerText = currentJitter + ' ms';
+
+            liveChart.data.labels.push(now);
+            liveChart.data.datasets[0].data.push(currentLat);
+            if (liveChart.data.labels.length > 8) {
+                liveChart.data.labels.shift();
+                liveChart.data.datasets[0].data.shift();
+            }
+            liveChart.update();
+
+            distChart.data.datasets[0].data = [currentLat, currentJitter, 0];
+            distChart.update();
+
+            rollingHistory.push({ timestamp: now, target, latency: currentLat, jitter: currentJitter, loss: 0 });
+            if (rollingHistory.length > 20) rollingHistory.shift();
+        }
+
+        function setTarget() {
+            const input = document.getElementById('targetInput').value.trim();
+            if (input) {
+                target = input;
+                liveChart.data.labels = [];
+                liveChart.data.datasets[0].data = [];
+                document.getElementById('aiTitle').innerText = '🤖 Optimal Path to ' + target;
+            }
+        }
+
+        function downloadJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rollingHistory, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "network_telemetry_report.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        setInterval(updateTelemetry, 3000);
+        updateTelemetry();
+    </script>
+</body>
+</html>
